@@ -897,7 +897,9 @@ async function main() {
       models,
     });
 
-    const tags = def.tags.map(t => `tag-${t}`);
+    const designTags = def.tags.map(t => `tag-${slugify(t)}`);
+    const licenseTag = `license-${slugify(def.license)}`;
+    const tags = [...designTags, licenseTag];
 
     // Create design project
     const { createEconomicEvent: cee } = await mutateAlice(CREATE_PROJECT, {
@@ -932,6 +934,8 @@ async function main() {
       link: "https://example.com/3d-consulting",
       license: "CC-BY-SA-4.0",
       tags: ["consulting", "3d-printing", "education"],
+      serviceType: ["Fabrication", "Learning & Education"],
+      availability: ["Booking Required", "Weekends Available"],
     },
     {
       name: "Custom PCB Design Service",
@@ -939,6 +943,8 @@ async function main() {
       link: "https://example.com/pcb-design",
       license: "GPL-3.0",
       tags: ["electronics", "pcb", "prototyping"],
+      serviceType: ["Fabrication", "Space Access"],
+      availability: ["Available Now", "Weekdays Only"],
     },
     {
       name: "Sustainable Packaging Consulting",
@@ -946,6 +952,8 @@ async function main() {
       link: "https://example.com/eco-packaging",
       license: "CC0-1.0",
       tags: ["sustainability", "packaging", "consulting"],
+      serviceType: ["Learning & Education"],
+      availability: ["Available Now", "Weekends Available"],
     },
   ];
 
@@ -961,10 +969,16 @@ async function main() {
       contributors: [],
       relations: [],
       remote: true,
-      serviceFilters: {},
+      serviceFilters: {
+        serviceType: def.serviceType || [],
+        availability: def.availability || [],
+      },
     });
 
-    const tags = def.tags.map(t => `tag-${t}`);
+    const baseTags = def.tags.map(t => `tag-${slugify(t)}`);
+    const serviceTypeTags = (def.serviceType || []).map(s => `servicetype-${slugify(s)}`);
+    const availabilityTags = (def.availability || []).map(a => `availability-${slugify(a)}`);
+    const allTags = [...new Set([...baseTags, ...serviceTypeTags, ...availabilityTags])];
 
     const { createEconomicEvent: cee } = await mutateBob(CREATE_PROJECT, {
       name: def.name,
@@ -978,7 +992,7 @@ async function main() {
       repo: def.link,
       process: processId,
       license: def.license,
-      tags,
+      tags: allTags,
     });
 
     const serviceId = cee?.economicEvent?.resourceInventoriedAs?.id;
@@ -990,6 +1004,26 @@ async function main() {
   // ── STEP 5: Create 5 products (each linked to a design) ───────────────────────
   console.log("── Step 5: Creating 5 products (linked to designs) ──");
 
+  // Helper: generate monotonic range tags for numeric filters (matching lib/tagging.ts)
+  function monotonicRangeTags(prefix, value, thresholds) {
+    if (!Number.isFinite(value)) return [];
+    const sorted = [...new Set(thresholds.filter(n => Number.isFinite(n)))].sort((a, b) => a - b);
+    const formatVal = v => Number.isInteger(v) ? String(v) : String(v).replace(/\./g, "p");
+    const ge = sorted.filter(t => t <= value).map(t => `${prefix}-ge-${formatVal(t)}`);
+    const le = sorted.filter(t => t >= value).map(t => `${prefix}-le-${formatVal(t)}`);
+    return [...new Set([...ge, ...le])];
+  }
+
+  function slugify(str) {
+    return str.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+      .replace(/[^a-z0-9]+/g, "-").replace(/-+/g, "-").replace(/^-+/, "").replace(/-+$/, "");
+  }
+
+  const RECYCLABILITY_THRESHOLDS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+  const POWER_THRESHOLDS_W = [0, 10, 25, 50, 75, 100, 150, 200, 250, 300, 500, 750, 1000, 1500, 2000];
+  const ENERGY_THRESHOLDS_KWH = [0, 10, 20, 30, 50, 100, 200, 300, 500, 750, 1000, 1500, 2000];
+  const CO2_THRESHOLDS_KG = [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 5, 7.5, 10, 15, 20];
+
   const productDefs = [
     {
       name: "Premium Gear Set",
@@ -998,7 +1032,16 @@ async function main() {
       license: "CC-BY-SA-4.0",
       tags: ["gears", "robotics", "mechanical"],
       designIndex: 0,
-      productFilters: { categories: ["electronics"], repairability: true, recyclabilityPct: 80 },
+      productFilters: {
+        categories: ["Electronics", "Tools"],
+        powerCompatibility: ["120V AC", "Battery Powered"],
+        replicability: ["High"],
+        recyclabilityPct: 80,
+        repairability: true,
+        powerRequirementW: 150,
+        energyKwh: 50,
+        co2Kg: 5,
+      },
     },
     {
       name: "ErgoGrip Pro Handle",
@@ -1007,7 +1050,16 @@ async function main() {
       license: "CC-BY-SA-4.0",
       tags: ["ergonomics", "professional", "tools"],
       designIndex: 1,
-      productFilters: { categories: ["tools"], repairability: true, recyclabilityPct: 65 },
+      productFilters: {
+        categories: ["Tools", "Wearables"],
+        powerCompatibility: ["Battery Powered", "USB-C"],
+        replicability: ["Medium"],
+        recyclabilityPct: 65,
+        repairability: true,
+        powerRequirementW: 10,
+        energyKwh: 20,
+        co2Kg: 1.5,
+      },
     },
     {
       name: "SunMount Universal Bracket",
@@ -1016,7 +1068,16 @@ async function main() {
       license: "CC0-1.0",
       tags: ["solar", "renewable", "outdoor"],
       designIndex: 2,
-      productFilters: { categories: ["energy"], repairability: true, recyclabilityPct: 95 },
+      productFilters: {
+        categories: ["Energy", "Sustainability"],
+        powerCompatibility: ["220-240V AC", "24V DC"],
+        replicability: ["Low", "Medium"],
+        recyclabilityPct: 95,
+        repairability: true,
+        powerRequirementW: 500,
+        energyKwh: 200,
+        co2Kg: 10,
+      },
     },
     {
       name: "Urban Cargo Rack XL",
@@ -1025,7 +1086,16 @@ async function main() {
       license: "CC-BY-4.0",
       tags: ["bicycle", "urban", "transport"],
       designIndex: 3,
-      productFilters: { categories: ["transport"], repairability: true, recyclabilityPct: 90 },
+      productFilters: {
+        categories: ["Furniture", "Sustainability"],
+        powerCompatibility: ["USB-C", "12V DC"],
+        replicability: ["Medium"],
+        recyclabilityPct: 90,
+        repairability: true,
+        powerRequirementW: 0,
+        energyKwh: 300,
+        co2Kg: 15,
+      },
     },
     {
       name: "DeskMate Cable System",
@@ -1034,7 +1104,16 @@ async function main() {
       license: "MIT",
       tags: ["desk", "organization", "office"],
       designIndex: 4,
-      productFilters: { categories: ["office"], repairability: true, recyclabilityPct: 70 },
+      productFilters: {
+        categories: ["Education", "Medical", "Home renovation"],
+        powerCompatibility: ["12V DC", "Battery Powered"],
+        replicability: ["High"],
+        recyclabilityPct: 70,
+        repairability: true,
+        powerRequirementW: 75,
+        energyKwh: 100,
+        co2Kg: 2.5,
+      },
     },
   ];
 
@@ -1045,24 +1124,43 @@ async function main() {
     const { createProcess: cp } = await mutateBob(CREATE_PROCESS, { name: `creation of ${def.name} by ${bobAuth.username}` });
     const processId = cp?.process?.id;
 
-    // Build tags
-    const baseTags = def.tags.map(t => `tag-${t}`);
-    const productFilterTags = [];
-    if (def.productFilters?.categories) {
-      for (const cat of def.productFilters.categories) {
-        productFilterTags.push(`category-${cat}`);
-      }
-    }
-    if (def.productFilters?.recyclabilityPct != null) {
-      productFilterTags.push(`recyclability-pct-${def.productFilters.recyclabilityPct}`);
-    }
-    if (def.productFilters?.repairability) {
-      productFilterTags.push("repairability-true");
-    }
-    if (def.productFilters?.powerRequirementW) {
-      productFilterTags.push(`power-requirement-w-${def.productFilters.powerRequirementW}`);
-    }
-    const tags = [...baseTags, ...productFilterTags];
+    // Build tags using the same prefixes as lib/tagging.ts
+    const pf = def.productFilters || {};
+    const baseTags = def.tags.map(t => `tag-${slugify(t)}`);
+
+    const categoryTags = (pf.categories || []).map(c => `category-${slugify(c)}`);
+    const powerCompatTags = (pf.powerCompatibility || []).map(p => `powercompat-${slugify(p)}`);
+    const replicabilityTags = (pf.replicability || []).map(r => `replicability-${slugify(r)}`);
+
+    const recyclabilityTags = Number.isFinite(pf.recyclabilityPct)
+      ? monotonicRangeTags("recyclability", pf.recyclabilityPct, RECYCLABILITY_THRESHOLDS)
+      : [];
+    const repairabilityTags = pf.repairability ? ["repairability-available"] : [];
+
+    const powerReqTags = Number.isFinite(pf.powerRequirementW)
+      ? monotonicRangeTags("powerreq", pf.powerRequirementW, POWER_THRESHOLDS_W)
+      : [];
+    const energyTags = Number.isFinite(pf.energyKwh)
+      ? monotonicRangeTags("env-energy", pf.energyKwh, ENERGY_THRESHOLDS_KWH)
+      : [];
+    const co2Tags = Number.isFinite(pf.co2Kg)
+      ? monotonicRangeTags("env-co2", pf.co2Kg, CO2_THRESHOLDS_KG)
+      : [];
+
+    // Merge all tags (deduplicated)
+    const licenseTag = `license-${slugify(def.license)}`;
+    const allTags = [...new Set([
+      ...baseTags,
+      ...categoryTags,
+      ...powerCompatTags,
+      ...replicabilityTags,
+      ...recyclabilityTags,
+      ...repairabilityTags,
+      ...powerReqTags,
+      ...energyTags,
+      ...co2Tags,
+      licenseTag,
+    ])];
 
     const designId = results.designs[def.designIndex].id;
 
@@ -1088,7 +1186,7 @@ async function main() {
       repo: def.link,
       process: processId,
       license: def.license,
-      tags,
+      tags: allTags,
     });
 
     const productId = cee?.economicEvent?.resourceInventoriedAs?.id;
