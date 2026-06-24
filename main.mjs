@@ -303,9 +303,40 @@ async function zenflowsUploadFile(filePath) {
     description: fileName,
     extension: path.extname(fileName).slice(1),
     hash,
-    mimeType: fileName.endsWith(".stl") ? "application/sla" : "image/png",
+    mimeType: fileName.endsWith(".stl") ? "application/sla" : "image/jpeg",
     size: fileBuffer.length,
   };
+}
+
+/**
+ * Download an image from picsum.photos with a seed for consistent/relevant results.
+ * Returns the local file path, or null on failure.
+ */
+async function downloadPicsumImage(seed, width = 400, height = 300) {
+  const url = `https://picsum.photos/seed/${encodeURIComponent(seed)}/${width}/${height}`;
+  const dest = path.join(__dirname, `img_${seed.replace(/[^a-zA-Z0-9_-]/g, "_")}.jpg`);
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    fs.writeFileSync(dest, buf);
+    return dest;
+  } catch (e) {
+    console.log(`    ⚠  Image download failed for "${seed}": ${e.message}`);
+    return null;
+  }
+}
+
+/**
+ * Download + upload a picsum image to zenflows. Returns the IFile metadata.
+ */
+async function createPicsumImage(seed) {
+  const localPath = await downloadPicsumImage(seed);
+  if (!localPath) return null;
+  const uploaded = await zenflowsUploadFile(localPath);
+  // Cleanup temp file
+  try { fs.unlinkSync(localPath); } catch {}
+  return uploaded;
 }
 
 // ────────────────────────────────────────────────────────────────────────────────
@@ -829,22 +860,8 @@ async function main() {
   const mutateAlice = zenflowsMutate(aliceAuth);
   const mutateBob = zenflowsMutate(bobAuth);
 
-  // Upload test image (used for all projects)
-  console.log("── Uploading test image ──");
-  // Create a small test PNG image in memory
-  const testImagePath = path.join(__dirname, "test_image.png");
-  // Generate a minimal valid PNG if it doesn't exist
-  if (!fs.existsSync(testImagePath)) {
-    // Minimal PNG: 1x1 pixel red, base64 encoded
-    const minimalPng = Buffer.from(
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==",
-      "base64"
-    );
-    fs.writeFileSync(testImagePath, minimalPng);
-    console.log(`  Created test image: ${testImagePath}`);
-  }
-  const testImage = await zenflowsUploadFile(testImagePath);
-  console.log(`  Image hash: ${testImage.hash}`);
+  // Upload a placeholer image for when entity-specific downloads fail
+  const fallbackImage = await createPicsumImage("placeholder");
   console.log("");
 
   // Check 3D model file
@@ -870,6 +887,7 @@ async function main() {
       license: "CC-BY-SA-4.0",
       tags: ["3d-printing", "mechanical", "parametric"],
       location: { name: "FabLab Torino", query: "Turin, Italy" },
+      imageSeed: "modular-gears-3d-printing",
     },
     {
       name: "Ergonomic Handle Grip",
@@ -878,6 +896,7 @@ async function main() {
       license: "GPL-3.0",
       tags: ["ergonomics", "accessibility", "3d-printing"],
       location: { name: "DesignLab Vienna", query: "Vienna, Austria" },
+      imageSeed: "ergonomic-handle-grip-design",
     },
     {
       name: "Solar Panel Mount Bracket",
@@ -886,6 +905,7 @@ async function main() {
       license: "CC0-1.0",
       tags: ["solar", "renewable-energy", "mounting"],
       location: { name: "GreenFab Lisbon", query: "Lisbon, Portugal" },
+      imageSeed: "solar-panel-mounting-bracket",
     },
     {
       name: "Bicycle Cargo Rack",
@@ -893,6 +913,7 @@ async function main() {
       link: "https://github.com/example/bike-rack",
       license: "CC-BY-4.0",
       tags: ["bicycle", "transportation", "cargo"],
+      imageSeed: "bicycle-cargo-rack-metal",
     },
     {
       name: "Desktop Cable Organizer",
@@ -900,12 +921,17 @@ async function main() {
       link: "https://github.com/example/cable-organizer",
       license: "MIT",
       tags: ["organization", "workspace", "modular"],
+      imageSeed: "cable-management-desk-organizer",
     },
   ];
 
   for (let i = 0; i < designDefs.length; i++) {
     const def = designDefs[i];
     console.log(`  [${i + 1}/5] Creating design: ${def.name}`);
+
+    // Download relevant image
+    console.log(`    Downloading image...`);
+    const image = (await createPicsumImage(def.imageSeed)) || fallbackImage;
 
     // Create process
     const { createProcess: cp } = await mutateAlice(CREATE_PROCESS, { name: `creation of ${def.name} by ${aliceAuth.username}` });
@@ -971,7 +997,7 @@ async function main() {
       creationTime: new Date().toISOString(),
       resourceSpec: projectSpecs.design.id,
       oneUnit: unitOne.id,
-      images: [testImage],
+      images: [image],
       repo: def.link,
       process: processId,
       license: def.license,
@@ -999,6 +1025,7 @@ async function main() {
       serviceType: ["Fabrication", "Learning & Education"],
       availability: ["Booking Required", "Weekends Available"],
       location: { name: "Makerspace Amsterdam", query: "Amsterdam, Netherlands" },
+      imageSeed: "3d-printer-filament-colors",
     },
     {
       name: "Custom PCB Design Service",
@@ -1009,6 +1036,7 @@ async function main() {
       serviceType: ["Fabrication", "Space Access"],
       availability: ["Available Now", "Weekdays Only"],
       location: { name: "TechHub Berlin", query: "Berlin, Germany" },
+      imageSeed: "printed-circuit-board-electronics",
     },
     {
       name: "Sustainable Packaging Consulting",
@@ -1019,6 +1047,7 @@ async function main() {
       serviceType: ["Learning & Education"],
       availability: ["Available Now", "Weekends Available"],
       location: { name: "GreenLab Barcelona", query: "Barcelona, Spain" },
+      imageSeed: "sustainable-eco-packaging-nature",
     },
   ];
 
@@ -1026,6 +1055,8 @@ async function main() {
   for (let i = 0; i < serviceDefs.length; i++) {
     const def = serviceDefs[i];
     console.log(`  [${i + 1}/3] Creating service: ${def.name}`);
+
+    const image = (await createPicsumImage(def.imageSeed)) || fallbackImage;
 
     const { createProcess: cp } = await mutateBob(CREATE_PROCESS, { name: `creation of ${def.name} by ${bobAuth.username}` });
     const processId = cp?.process?.id;
@@ -1068,7 +1099,7 @@ async function main() {
       creationTime: new Date().toISOString(),
       resourceSpec: projectSpecs.service.id,
       oneUnit: unitOne.id,
-      images: [testImage],
+      images: [image],
       repo: def.link,
       process: processId,
       license: def.license,
@@ -1124,6 +1155,7 @@ async function main() {
         co2Kg: 5,
       },
       location: { name: "FabLab Milano", query: "Milan, Italy" },
+      imageSeed: "precision-gears-mechanical-metal",
     },
     {
       name: "ErgoGrip Pro Handle",
@@ -1143,6 +1175,7 @@ async function main() {
         co2Kg: 1.5,
       },
       location: { name: "Hackerspace Paris", query: "Paris, France" },
+      imageSeed: "ergonomic-tool-handle-professional",
     },
     {
       name: "SunMount Universal Bracket",
@@ -1162,6 +1195,7 @@ async function main() {
         co2Kg: 10,
       },
       location: { name: "SolarLab Valencia", query: "Valencia, Spain" },
+      imageSeed: "solar-panel-renewable-energy-sun",
     },
     {
       name: "Urban Cargo Rack XL",
@@ -1181,6 +1215,7 @@ async function main() {
         co2Kg: 15,
       },
       location: { name: "BikeKitchen Copenhagen", query: "Copenhagen, Denmark" },
+      imageSeed: "bike-cargo-rack-urban-commute",
     },
     {
       name: "DeskMate Cable System",
@@ -1200,12 +1235,15 @@ async function main() {
         co2Kg: 2.5,
       },
       location: { name: "OpenLab London", query: "London, United Kingdom" },
+      imageSeed: "cable-management-desk-workspace",
     },
   ];
 
   for (let i = 0; i < productDefs.length; i++) {
     const def = productDefs[i];
     console.log(`  [${i + 1}/5] Creating product: ${def.name}`);
+
+    const image = (await createPicsumImage(def.imageSeed)) || fallbackImage;
 
     const { createProcess: cp } = await mutateBob(CREATE_PROCESS, { name: `creation of ${def.name} by ${bobAuth.username}` });
     const processId = cp?.process?.id;
@@ -1281,7 +1319,7 @@ async function main() {
       creationTime: new Date().toISOString(),
       resourceSpec: projectSpecs.product.id,
       oneUnit: unitOne.id,
-      images: [testImage],
+      images: [image],
       repo: def.link,
       process: processId,
       license: def.license,
