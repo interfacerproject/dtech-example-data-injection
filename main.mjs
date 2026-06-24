@@ -74,7 +74,6 @@ if (fs.existsSync(envPath)) {
 
 const BASE_URL = process.env.BASE_URL || "https://proxy.dpp-dev.ddns.dyne.org";
 const ZENFLOWS_URL = process.env.NEXT_PUBLIC_ZENFLOWS_URL || `${BASE_URL}/zenflows/api`;
-const ZENFLOWS_FILE_URL = process.env.NEXT_PUBLIC_ZENFLOWS_FILE_URL || `${BASE_URL}/zenflows/api/file`;
 const DPP_URL = process.env.NEXT_PUBLIC_DPP_URL || `${BASE_URL}/interfacer-dpp`;
 const FEEDBACK_URL = process.env.NEXT_PUBLIC_FEEDBACK_URL || "https://feedback.dpp-dev.ddns.dyne.org";
 const ZENFLOWS_ADMIN = process.env.NEXT_PUBLIC_ZENFLOWS_ADMIN || "4503e566f33808a6057a05b2cb1b10bef14cb3fe73f5e3ca101fb8c16a5250ec59283d80e23797bd4e5d2874a5056773300e9c2f12b57992b4964b286f9b6ba4";
@@ -281,62 +280,42 @@ Then print 'eddsa signature' as 'base64'
 // HELPER: Upload file to zenflows
 // ────────────────────────────────────────────────────────────────────────────────
 
-async function zenflowsUploadFile(filePath) {
-  const fileBuffer = fs.readFileSync(filePath);
-  const fileName = path.basename(filePath);
-
-  // Hash the file with sha512 (zenroom-compatible)
-  const hash = base64url.fromBase64(
-    crypto.createHash("sha512").update(fileBuffer).digest("base64")
-  );
-
-  const form = new FormData();
-  form.append(hash, fileBuffer, { filename: fileName });
-
-  const res = await fetch(ZENFLOWS_FILE_URL, { method: "POST", body: form });
-  if (!res.ok) {
-    const errText = await res.text().catch(() => res.statusText);
-    throw new Error(`Zenflows file upload failed: ${errText}`);
-  }
-  return {
-    name: fileName,
-    description: fileName,
-    extension: path.extname(fileName).slice(1),
-    hash,
-    mimeType: fileName.endsWith(".stl") ? "application/sla" : "image/jpeg",
-    size: fileBuffer.length,
-  };
-}
-
 /**
- * Download an image from picsum.photos with a seed for consistent/relevant results.
- * Returns the local file path, or null on failure.
+ * Download + upload a picsum image to DPP. Returns the metadata image URL.
  */
-async function downloadPicsumImage(seed, width = 400, height = 300) {
-  const url = `https://picsum.photos/seed/${encodeURIComponent(seed)}/${width}/${height}`;
-  const dest = path.join(__dirname, `img_${seed.replace(/[^a-zA-Z0-9_-]/g, "_")}.jpg`);
+async function createPicsumImage(seed, privateKey, publicKey, signScript) {
+  const url = `https://picsum.photos/seed/${encodeURIComponent(seed)}/400/300`;
   try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const buf = Buffer.from(await res.arrayBuffer());
-    fs.writeFileSync(dest, buf);
-    return dest;
+    const imgRes = await fetch(url);
+    if (!imgRes.ok) return null;
+    const buf = Buffer.from(await imgRes.arrayBuffer());
+
+    // Sign the sha256 hex
+    const sha256 = crypto.createHash("sha256").update(buf).digest("hex");
+    const zenData = JSON.stringify({ gql: sha256 });
+    const zenKeys = JSON.stringify({ keyring: { eddsa: privateKey } });
+    const { result } = await zencode_exec(signScript, { data: zenData, keys: zenKeys });
+    const signature = JSON.parse(result).eddsa_signature;
+
+    // Upload to DPP
+    const form = new FormData();
+    form.append("file", buf, { filename: `${seed}.jpg`, contentType: "image/jpeg" });
+    const dppRes = await fetch(`${DPP_URL}/upload`, {
+      method: "POST",
+      headers: { "did-pk": publicKey, "did-sign": signature },
+      body: form,
+    });
+    if (!dppRes.ok) {
+      console.log(`    ⚠  DPP image upload failed: ${dppRes.status}`);
+      return null;
+    }
+    const att = await dppRes.json();
+    // Use proxy URL (the raw DPP URL may not resolve from outside the cluster)
+    return `${DPP_URL}/file/${encodeURIComponent(att.id)}`;
   } catch (e) {
-    console.log(`    ⚠  Image download failed for "${seed}": ${e.message}`);
+    console.log(`    ⚠  Image download/upload failed: ${e.message}`);
     return null;
   }
-}
-
-/**
- * Download + upload a picsum image to zenflows. Returns the IFile metadata.
- */
-async function createPicsumImage(seed) {
-  const localPath = await downloadPicsumImage(seed);
-  if (!localPath) return null;
-  const uploaded = await zenflowsUploadFile(localPath);
-  // Cleanup temp file
-  try { fs.unlinkSync(localPath); } catch {}
-  return uploaded;
 }
 
 // ────────────────────────────────────────────────────────────────────────────────
@@ -860,8 +839,9 @@ async function main() {
   const mutateAlice = zenflowsMutate(aliceAuth);
   const mutateBob = zenflowsMutate(bobAuth);
 
-  // Upload a placeholer image for when entity-specific downloads fail
-  const fallbackImage = await createPicsumImage("placeholder");
+  // Upload a fallback image for when downloads fail
+  const dppSignScript = fs.readFileSync(path.join(__dirname, "zenflows-crypto", "src", "sign_graphql.zen"), "utf8");
+  const fallbackImage = await createPicsumImage("placeholder", aliceAuth.privateKey, aliceAuth.publicKey, dppSignScript);
   console.log("");
 
   // Check 3D model file
@@ -931,7 +911,7 @@ async function main() {
 
     // Download relevant image
     console.log(`    Downloading image...`);
-    const image = (await createPicsumImage(def.imageSeed)) || fallbackImage;
+    const image = (await createPicsumImage(def.imageSeed, aliceAuth.privateKey, aliceAuth.publicKey, dppSignScript)) || fallbackImage;
 
     // Create process
     const { createProcess: cp } = await mutateAlice(CREATE_PROCESS, { name: `creation of ${def.name} by ${aliceAuth.username}` });
@@ -976,12 +956,13 @@ async function main() {
       if (!designLocationId) console.log(`    ⚠ Location lookup failed`);
     }
 
-    // Prepare metadata
+    // Prepare metadata (with DPP image URL)
     const metadata = JSON.stringify({
       contributors: [],
       relations: [],
       remote: !designLocationId,
       models,
+      image: image,  // DPP file URL
     });
 
     const designTags = def.tags.map(t => `tag-${slugify(t)}`);
@@ -997,7 +978,7 @@ async function main() {
       creationTime: new Date().toISOString(),
       resourceSpec: projectSpecs.design.id,
       oneUnit: unitOne.id,
-      images: [image],
+      images: [],
       repo: def.link,
       process: processId,
       license: def.license,
@@ -1056,7 +1037,7 @@ async function main() {
     const def = serviceDefs[i];
     console.log(`  [${i + 1}/3] Creating service: ${def.name}`);
 
-    const image = (await createPicsumImage(def.imageSeed)) || fallbackImage;
+    const image = (await createPicsumImage(def.imageSeed, aliceAuth.privateKey, aliceAuth.publicKey, dppSignScript)) || fallbackImage;
 
     const { createProcess: cp } = await mutateBob(CREATE_PROCESS, { name: `creation of ${def.name} by ${bobAuth.username}` });
     const processId = cp?.process?.id;
@@ -1084,6 +1065,7 @@ async function main() {
         serviceType: def.serviceType || [],
         availability: def.availability || [],
       },
+      image: image,
     });
 
     const baseTags = def.tags.map(t => `tag-${slugify(t)}`);
@@ -1099,7 +1081,7 @@ async function main() {
       creationTime: new Date().toISOString(),
       resourceSpec: projectSpecs.service.id,
       oneUnit: unitOne.id,
-      images: [image],
+      images: [],
       repo: def.link,
       process: processId,
       license: def.license,
@@ -1243,7 +1225,7 @@ async function main() {
     const def = productDefs[i];
     console.log(`  [${i + 1}/5] Creating product: ${def.name}`);
 
-    const image = (await createPicsumImage(def.imageSeed)) || fallbackImage;
+    const image = (await createPicsumImage(def.imageSeed, aliceAuth.privateKey, aliceAuth.publicKey, dppSignScript)) || fallbackImage;
 
     const { createProcess: cp } = await mutateBob(CREATE_PROCESS, { name: `creation of ${def.name} by ${bobAuth.username}` });
     const processId = cp?.process?.id;
@@ -1308,6 +1290,7 @@ async function main() {
       design: designId,
       models: results.designs[def.designIndex].models,
       productFilters: def.productFilters,
+      image: image,
     });
 
     // Create product
@@ -1319,7 +1302,7 @@ async function main() {
       creationTime: new Date().toISOString(),
       resourceSpec: projectSpecs.product.id,
       oneUnit: unitOne.id,
-      images: [image],
+      images: [],
       repo: def.link,
       process: processId,
       license: def.license,
