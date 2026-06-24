@@ -84,6 +84,10 @@ const LOSH_ID = process.env.NEXT_PUBLIC_LOSH_ID || "06EG20F8TN5159QS8VXVAEJ1WR";
 const SPEC_MACHINE = process.env.NEXT_PUBLIC_SPEC_MACHINE || "";
 const SPEC_DPP = process.env.NEXT_PUBLIC_SPEC_DPP || "";
 
+// Nominatim endpoints (matching interfacer-gui config)
+const NOMINATIM_SEARCH = process.env.NEXT_PUBLIC_LOCATION_AUTOCOMPLETE || "https://nominatim.openstreetmap.org/search";
+const NOMINATIM_LOOKUP = process.env.NEXT_PUBLIC_LOCATION_LOOKUP || "https://nominatim.openstreetmap.org/lookup";
+
 // Paths for test files
 const STL_FILE_PATH = "/Users/alcibiade/Desktop/incastro_mobile.stl";
 
@@ -346,7 +350,48 @@ async function generateKeys(email, challenges, hmac) {
 }
 
 // ────────────────────────────────────────────────────────────────────────────────
-// ZENFLOWS GRAPHQL OPERATIONS
+// LOCATION: Nominatim lookup + zenflows SpatialThing creation
+// ────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Look up a location by search query via Nominatim.
+ * Returns { address, lat, lng } or null if not found.
+ */
+async function lookupLocation(query) {
+  if (!query) return null;
+  try {
+    const params = new URLSearchParams({ q: query, format: "jsonv2", addressdetails: "1", limit: "1" });
+    const res = await fetch(`${NOMINATIM_SEARCH}?${params}`, {
+      headers: { "User-Agent": "interfacer-init-data/1.0" },
+    });
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length === 0) return null;
+    const item = data[0];
+    return {
+      address: item.display_name || query,
+      lat: parseFloat(item.lat || 0),
+      lng: parseFloat(item.lon || 0),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Create a SpatialThing in zenflows and return the ID.
+ */
+async function createSpatialThing(mutateFn, name, address, lat, lng) {
+  const { createSpatialThing: cst } = await mutateFn(CREATE_LOCATION, {
+    name,
+    addr: address,
+    lat,
+    lng,
+  });
+  return cst?.spatialThing?.id;
+}
+
+// ────────────────────────────────────────────────────────────────────────────────
+// ZENFLOWS MUTATIONS (continued)
 // ────────────────────────────────────────────────────────────────────────────────
 
 const REGISTER_USER = `
@@ -824,6 +869,7 @@ async function main() {
       link: "https://github.com/example/modular-gear",
       license: "CC-BY-SA-4.0",
       tags: ["3d-printing", "mechanical", "parametric"],
+      location: { name: "FabLab Torino", query: "Turin, Italy" },
     },
     {
       name: "Ergonomic Handle Grip",
@@ -831,6 +877,7 @@ async function main() {
       link: "https://github.com/example/ergo-handle",
       license: "GPL-3.0",
       tags: ["ergonomics", "accessibility", "3d-printing"],
+      location: { name: "DesignLab Vienna", query: "Vienna, Austria" },
     },
     {
       name: "Solar Panel Mount Bracket",
@@ -838,6 +885,7 @@ async function main() {
       link: "https://github.com/example/solar-bracket",
       license: "CC0-1.0",
       tags: ["solar", "renewable-energy", "mounting"],
+      location: { name: "GreenFab Lisbon", query: "Lisbon, Portugal" },
     },
     {
       name: "Bicycle Cargo Rack",
@@ -889,11 +937,24 @@ async function main() {
       }
     }
 
+    // Lookup and create location
+    let designLocationId = null;
+    if (def.location) {
+      const loc = await lookupLocation(def.location.query);
+      if (loc) {
+        designLocationId = await createSpatialThing(mutateAlice, def.location.name, loc.address, loc.lat, loc.lng);
+        if (designLocationId) {
+          console.log(`    ✓ Location: ${def.location.name} (${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)})`);
+        }
+      }
+      if (!designLocationId) console.log(`    ⚠ Location lookup failed`);
+    }
+
     // Prepare metadata
     const metadata = JSON.stringify({
       contributors: [],
       relations: [],
-      remote: false,
+      remote: !designLocationId,
       models,
     });
 
@@ -915,6 +976,7 @@ async function main() {
       process: processId,
       license: def.license,
       tags,
+      location: designLocationId,
     });
 
     const designId = cee?.economicEvent?.resourceInventoriedAs?.id;
@@ -936,6 +998,7 @@ async function main() {
       tags: ["consulting", "3d-printing", "education"],
       serviceType: ["Fabrication", "Learning & Education"],
       availability: ["Booking Required", "Weekends Available"],
+      location: { name: "Makerspace Amsterdam", query: "Amsterdam, Netherlands" },
     },
     {
       name: "Custom PCB Design Service",
@@ -945,6 +1008,7 @@ async function main() {
       tags: ["electronics", "pcb", "prototyping"],
       serviceType: ["Fabrication", "Space Access"],
       availability: ["Available Now", "Weekdays Only"],
+      location: { name: "TechHub Berlin", query: "Berlin, Germany" },
     },
     {
       name: "Sustainable Packaging Consulting",
@@ -954,6 +1018,7 @@ async function main() {
       tags: ["sustainability", "packaging", "consulting"],
       serviceType: ["Learning & Education"],
       availability: ["Available Now", "Weekends Available"],
+      location: { name: "GreenLab Barcelona", query: "Barcelona, Spain" },
     },
   ];
 
@@ -965,10 +1030,25 @@ async function main() {
     const { createProcess: cp } = await mutateBob(CREATE_PROCESS, { name: `creation of ${def.name} by ${bobAuth.username}` });
     const processId = cp?.process?.id;
 
+    // Lookup and create location
+    let locationId = null;
+    let isRemote = true;
+    if (def.location) {
+      const loc = await lookupLocation(def.location.query);
+      if (loc) {
+        locationId = await createSpatialThing(mutateBob, def.location.name, loc.address, loc.lat, loc.lng);
+        if (locationId) {
+          isRemote = false;
+          console.log(`    ✓ Location: ${def.location.name} (${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)})`);
+        }
+      }
+      if (!locationId) console.log(`    ⚠ Location lookup failed, marking as remote`);
+    }
+
     const metadata = JSON.stringify({
       contributors: [],
       relations: [],
-      remote: true,
+      remote: isRemote,
       serviceFilters: {
         serviceType: def.serviceType || [],
         availability: def.availability || [],
@@ -993,6 +1073,7 @@ async function main() {
       process: processId,
       license: def.license,
       tags: allTags,
+      location: locationId,
     });
 
     const serviceId = cee?.economicEvent?.resourceInventoriedAs?.id;
@@ -1042,6 +1123,7 @@ async function main() {
         energyKwh: 50,
         co2Kg: 5,
       },
+      location: { name: "FabLab Milano", query: "Milan, Italy" },
     },
     {
       name: "ErgoGrip Pro Handle",
@@ -1060,6 +1142,7 @@ async function main() {
         energyKwh: 20,
         co2Kg: 1.5,
       },
+      location: { name: "Hackerspace Paris", query: "Paris, France" },
     },
     {
       name: "SunMount Universal Bracket",
@@ -1078,6 +1161,7 @@ async function main() {
         energyKwh: 200,
         co2Kg: 10,
       },
+      location: { name: "SolarLab Valencia", query: "Valencia, Spain" },
     },
     {
       name: "Urban Cargo Rack XL",
@@ -1096,6 +1180,7 @@ async function main() {
         energyKwh: 300,
         co2Kg: 15,
       },
+      location: { name: "BikeKitchen Copenhagen", query: "Copenhagen, Denmark" },
     },
     {
       name: "DeskMate Cable System",
@@ -1114,6 +1199,7 @@ async function main() {
         energyKwh: 100,
         co2Kg: 2.5,
       },
+      location: { name: "OpenLab London", query: "London, United Kingdom" },
     },
   ];
 
@@ -1123,6 +1209,19 @@ async function main() {
 
     const { createProcess: cp } = await mutateBob(CREATE_PROCESS, { name: `creation of ${def.name} by ${bobAuth.username}` });
     const processId = cp?.process?.id;
+
+    // Lookup and create location
+    let productLocationId = null;
+    if (def.location) {
+      const loc = await lookupLocation(def.location.query);
+      if (loc) {
+        productLocationId = await createSpatialThing(mutateBob, def.location.name, loc.address, loc.lat, loc.lng);
+        if (productLocationId) {
+          console.log(`    ✓ Location: ${def.location.name} (${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)})`);
+        }
+      }
+      if (!productLocationId) console.log(`    ⚠ Location lookup failed`);
+    }
 
     // Build tags using the same prefixes as lib/tagging.ts
     const pf = def.productFilters || {};
@@ -1167,7 +1266,7 @@ async function main() {
     const metadata = JSON.stringify({
       contributors: [],
       relations: [],
-      remote: false,
+      remote: !productLocationId,
       design: designId,
       models: results.designs[def.designIndex].models,
       productFilters: def.productFilters,
@@ -1187,6 +1286,7 @@ async function main() {
       process: processId,
       license: def.license,
       tags: allTags,
+      location: productLocationId,
     });
 
     const productId = cee?.economicEvent?.resourceInventoriedAs?.id;
