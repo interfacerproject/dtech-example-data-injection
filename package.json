@@ -4,10 +4,12 @@
   "private": true,
   "description": "Data injection script for Interfacer platform - creates test users, projects, DPPs, and feedback",
   "scripts": {
-    "start": "node --experimental-vm-modules main.mjs"
+    "start": "node --experimental-vm-modules main.mjs",
+    "start:sdk": "node --experimental-vm-modules init-data-sdk.mjs"
   },
   "dependencies": {
     "@apollo/client": "^3.14.0",
+    "@interfacer/client": "^0.1.0",
     "base64url": "^3.0.1",
     "cross-fetch": "^4.1.0",
     "form-data": "^4.0.6",
