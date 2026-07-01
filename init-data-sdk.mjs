@@ -1,7 +1,7 @@
 #!/usr/bin/env node --experimental-vm-modules
 
 /**
- * Interfacer Init Data — using @interfacer/client SDK.
+ * Interfacer Init Data — using @dyne/interfacer-client SDK.
  */
 
 import { readFileSync, existsSync, writeFileSync } from "fs";
@@ -20,7 +20,7 @@ globalThis.Request = crossFetch.Request;
 globalThis.Response = crossFetch.Response;
 globalThis.FormData = FormDataLib;
 
-import { clearInstanceVariablesCache, InterfacerClient, createConfig } from "@interfacer/client";
+import { clearInstanceVariablesCache, InterfacerClient, createConfig } from "@dyne/interfacer-client";
 clearInstanceVariablesCache();
 
 // ── Load env from interfacer-gui ────────────────────────────────────

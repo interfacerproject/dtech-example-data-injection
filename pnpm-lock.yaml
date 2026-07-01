@@ -11,9 +11,9 @@ importers:
       '@apollo/client':
         specifier: ^3.14.0
         version: 3.14.1(graphql@15.10.2)
-      '@interfacer/client':
-        specifier: file:../interfacer-client
-        version: file:../interfacer-client(zenroom@5.26.1)
+      '@dyne/interfacer-client':
+        specifier: ^0.1.0
+        version: 0.1.0(zenroom@5.26.1)
       base64url:
         specifier: ^3.0.1
         version: 3.0.1
@@ -50,15 +50,15 @@ packages:
       subscriptions-transport-ws:
         optional: true
 
+  '@dyne/interfacer-client@0.1.0':
+    resolution: {integrity: sha512-B2mIPdbDYIXzJbzjK41XviM2XDNefdYiEBGtPtMo4FDvIeg9yU4uxeKOuIODCraxJmTFn99MERLJg/MXRahvXA==}
+    peerDependencies:
+      zenroom: ^4.0.0
+
   '@graphql-typed-document-node/core@3.2.0':
     resolution: {integrity: sha512-mB9oAsNCm9aM3/SOv4YtBMqZbYj10R7dkq8byBqxGY/ncFwhf2oQzMV+LCRlWoDSEBJ3COiR1yeDvMtsoOsuFQ==}
     peerDependencies:
       graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
-
-  '@interfacer/client@file:../interfacer-client':
-    resolution: {directory: ../interfacer-client, type: directory}
-    peerDependencies:
-      zenroom: ^4.0.0
 
   '@wry/caches@1.0.1':
     resolution: {integrity: sha512-bXuaUNLVVkD20wcGBWRyo7j9N3TxePEWFZj2Y+r9OoUzfqmavM84+mFykRicNsBqatba5JLay1t48wxaXaWnlA==}
@@ -264,14 +264,14 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
 
-  '@graphql-typed-document-node/core@3.2.0(graphql@15.10.2)':
-    dependencies:
-      graphql: 15.10.2
-
-  '@interfacer/client@file:../interfacer-client(zenroom@5.26.1)':
+  '@dyne/interfacer-client@0.1.0(zenroom@5.26.1)':
     dependencies:
       base64url: 3.0.1
       zenroom: 5.26.1
+
+  '@graphql-typed-document-node/core@3.2.0(graphql@15.10.2)':
+    dependencies:
+      graphql: 15.10.2
 
   '@wry/caches@1.0.1':
     dependencies:
