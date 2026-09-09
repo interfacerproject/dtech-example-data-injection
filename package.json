@@ -1,19 +1,22 @@
 {
   "name": "interfacer-init-data",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "Data injection script for Interfacer platform - creates test users, projects, DPPs, and feedback",
+  "description": "Demo-data injection for Interfacer using the official client SDK",
+  "packageManager": "pnpm@9.13.1",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
-    "start": "node --experimental-vm-modules main.mjs",
-    "start:sdk": "node --experimental-vm-modules init-data-sdk.mjs"
+    "start": "node init-data-sdk.mjs",
+    "start:sdk": "node init-data-sdk.mjs",
+    "start:inmachines": "node init-data-inmachines.mjs",
+    "start:inmachines:dpps": "node init-data-inmachines.mjs --dpps-only",
+    "dry-run:inmachines": "node init-data-inmachines.mjs --dry-run",
+    "check": "node --check init-data-sdk.mjs && node --check init-data-inmachines.mjs && node --check main.mjs && node -e \"Promise.all([import('./init-data-sdk.mjs'), import('./init-data-inmachines.mjs')])\""
   },
   "dependencies": {
-    "@apollo/client": "^3.14.0",
-    "@dyne/interfacer-client": "^0.1.0",
-    "base64url": "^3.0.1",
-    "cross-fetch": "^4.1.0",
-    "form-data": "^4.0.6",
-    "graphql": "^15.10.1",
-    "zenroom": "5.26.1"
+    "@dyne/interfacer-client": "^0.6.1",
+    "zenroom": "^5.36.1"
   }
 }

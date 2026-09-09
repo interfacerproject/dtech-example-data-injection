@@ -1,5 +1,7 @@
 node_modules/
 results.json
+results-sdk.json
+results-inmachines.json
 test_image.png
 *.log
 .env

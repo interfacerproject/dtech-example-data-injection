@@ -1,91 +1,101 @@
-# Interfacer Init Data
+# Interfacer demo-data injection
 
-Test data injection scripts for the Interfacer platform.
+Demo-data generator aligned with the current `../interfacer-gui` data model. All supported entry points delegate to `init-data-sdk.mjs` and use `@dyne/interfacer-client`; there is no duplicate raw GraphQL/REST implementation.
 
-## Overview
-
-This project generates test data by directly interacting with the backend services:
-
-| Service | Purpose | Interface |
-|---------|---------|-----------|
-| **Zenflows** | Users, projects, resources | GraphQL |
-| **interfacer-dpp** | Digital Product Passports | REST |
-| **interfacer-feedback** | Reviews and comments | REST |
-
-## What Gets Created
+## Generated data
 
 | Entity | Count | Details |
-|--------|-------|---------|
-| Users | 3 | Alice (designer), Bob (maker), Clara (reviewer) |
-| Designs | 5 | With 3D model files (.stl) |
-| Services | 3 | Remote/digital services |
-| Products | 5 | Each linked to a design |
-| DPPs | 15 | 3 per product |
-| Feedback | 7 | Reviews + comments |
+|---|---:|---|
+| Users | 3 | Designer, maker, reviewer |
+| Machines | 4 | Typed and searchable machine resources |
+| Designs | 5 | CAD URL, complexity, BOM, machines, materials, power requirements |
+| Services | 3 | Service-type and availability filter tags |
+| Products | 5 | Linked design, location, price, availability, catalog filter tags |
+| DPPs | 15 | Three active passports per product |
+| Feedback | 7 | Reviews and comments created through the SDK feedback client |
 
-## Data Flow per Entity
+The generated metadata and classification tags follow the current GUI creation flow:
 
-### User Creation
-1. `keypairoomServer` mutation → get HMAC
-2. Zenroom `keypairoomClient` → generate EdDSA, Ethereum, Reflow, Bitcoin, ECDH keys
-3. `createPerson` mutation → create agent in zenflows
-4. `personCheck` query → verify user exists
+- user tags use `tag-*`;
+- product and service filters are generated with `client.tagging`;
+- complexity, machine, material, license, power, and manufacturability use the SDK tag prefixes;
+- image URLs, CAD URLs, licenses, declarations, price, availability, and linked designs use the shapes read by the current GUI;
+- design and DPP citations share the product creation process, preserving ValueFlows traceability;
+- locations are created once and passed to `createProject` via `locationId`.
 
-### Project Creation (Design / Service / Product)
-1. `createProcess` mutation → create process
-2. Upload images to zenflows file endpoint (sha512 hash)
-3. Upload 3D models to DPP upload endpoint (sha256 + eddsa sign)
-4. `createEconomicEvent` (action: "produce") → create resource
-5. For products: `createEconomicEvent` (action: "cite") → link design
-6. Add contributors, relations as needed
+## Requirements
 
-### DPP Creation
-1. POST `/dpp` to DPP REST API (signed with eddsa)
-2. `createEconomicEvent` (action: "produce", conformsTo: specDpp) → DPP resource
-3. `createEconomicEvent` (action: "cite") → link DPP to product
+- Node.js 24 (the same version as `../interfacer-gui/.mise.toml`)
+- pnpm 9.13.1
+- reachable Zenflows, DPP, feedback, location, and Picsum services
+- `../interfacer-gui/.env.local` or `../interfacer-gui/.env`
 
-### Feedback Creation
-1. POST `/api/v1/projects/:id/reviews` → create review (1-5 stars)
-2. POST `/api/v1/projects/:id/comments` → create comment
-3. All feedback endpoints require eddsa-signed requests
+The script loads `.env`, then applies `.env.local` overrides. Variables already present in the shell have the highest precedence. In particular it consumes the GUI's `BASE_URL`, `NEXT_PUBLIC_ZENFLOWS_URL`, `NEXT_PUBLIC_DPP_URL`, `NEXT_PUBLIC_FEEDBACK_URL`, location endpoint, admin token, and optional specification IDs.
 
-## Prerequisites
+An optional `MODEL_URL` can override the public STL URL used for designs.
 
-- Node.js 18+
-- Running services:
-  - Zenflows (GraphQL at `NEXT_PUBLIC_ZENFLOWS_URL`)
-  - interfacer-dpp (REST at `NEXT_PUBLIC_DPP_URL`)
-  - interfacer-feedback (REST at `NEXT_PUBLIC_FEEDBACK_URL`)
-- Environment: copy `.env.local` from `../interfacer-gui/`
-- 3D model: `/Users/alcibiade/Desktop/incastro_mobile.stl`
+## Install and run
 
-## Usage
-
-### As a standalone Node.js script:
 ```bash
-node --experimental-vm-modules main.mjs
+corepack enable
+pnpm install
+pnpm start
 ```
 
-### As a Jupyter notebook (requires ijavascript):
+`main.mjs` is retained as a compatibility shim, so this also works:
+
 ```bash
-npm install -g ijavascript
-ijsinstall
-jupyter notebook interfacer_init_data.ipynb
+node main.mjs
 ```
 
-## Auth / Signing
+For Jupyter, install an ijavascript kernel and run `interfacer_init_data.ipynb`; the notebook imports the same SDK script rather than maintaining a separate injector.
 
-All mutations are cryptographically signed using EdDSA keys generated via Zenroom.
+## InMachines catalog injector
 
-### Zenflows GraphQL:
-- Sign the entire request body (base64-encoded)
-- Headers: `zenflows-sign`, `zenflows-user`, `zenflows-hash`
-- Admin header: `zenflows-admin` (for privileged operations like `createPerson`)
+`init-data-inmachines.mjs` creates a dedicated InMachines account and imports the catalog scraped from:
 
-### DPP / Feedback REST:
-- Sign the request body (or empty string for GET/DELETE)
-- Headers: `did-sign`, `did-pk`, `x-user-id`
+- <https://www.inmachines.net/open-lab-starter-kit>
+- <https://www.inmachines.net/services8f05a8a7>
+- the four service detail pages linked from the services page;
+- the eight linked repositories in the `Open-Lab-Starter-Kit` GitHub organization.
+
+The normalized, reviewable snapshot is stored in `data/inmachines.json`. It contains source URLs, repository and license information, descriptions, original images, BOM links, and available STEP model links.
+
+The injector creates:
+
+- one InMachines account, if it does not already exist;
+- eight OLSK designs;
+- eight InMachines-built products, each linked to its design through the same creation process;
+- three DPPs per product (24 total), also cited by the product creation process;
+- four services;
+- one shared InMachines location in Schwarzenbek.
+
+Validate the dataset without accessing the backend:
+
+```bash
+pnpm dry-run:inmachines
+```
+
+Run the complete import:
+
+```bash
+pnpm start:inmachines
+```
+
+To backfill only the DPPs for products already listed in `results-inmachines.json`, without duplicating designs, products, services, or locations:
+
+```bash
+pnpm start:inmachines:dpps
+```
+
+The DPP backfill checkpoints `results-inmachines.json` after every successful passport and skips already recorded product/index pairs when resumed.
+
+The default identity is `InMachines <info@inmachines.net>`. It can be overridden with `INMACHINES_NAME`, `INMACHINES_USERNAME`, and `INMACHINES_EMAIL`. The deterministic demo credentials can be overridden with `INMACHINES_CHALLENGE_1` through `INMACHINES_CHALLENGE_5`. If the email already belongs to an account created with different credentials, the script stops rather than impersonating or overwriting it.
+
+The run writes public IDs to `results-inmachines.json`; private keys are never persisted there.
 
 ## Output
 
-After successful execution, a `results.json` file is created containing all created entity IDs, which can be used for cleanup or reference.
+A successful run writes `results-sdk.json` with created IDs and public user data. Private keys are used only in memory and are not written to the output.
+
+The injector is additive. Re-running it reuses deterministic demo identities but creates additional resources, DPPs, and feedback where accepted by the services.
