@@ -13,7 +13,9 @@
     "start:inmachines": "node init-data-inmachines.mjs",
     "start:inmachines:dpps": "node init-data-inmachines.mjs --dpps-only",
     "dry-run:inmachines": "node init-data-inmachines.mjs --dry-run",
-    "check": "node --check init-data-sdk.mjs && node --check init-data-inmachines.mjs && node --check main.mjs && node -e \"Promise.all([import('./init-data-sdk.mjs'), import('./init-data-inmachines.mjs')])\""
+    "start:3d-demo": "node init-data-3d-demo-models.mjs",
+    "dry-run:3d-demo": "node init-data-3d-demo-models.mjs --dry-run",
+    "check": "node --check init-data-sdk.mjs && node --check init-data-inmachines.mjs && node --check init-data-3d-demo-models.mjs && node --check main.mjs && node -e \"Promise.all([import('./init-data-sdk.mjs'), import('./init-data-inmachines.mjs'), import('./init-data-3d-demo-models.mjs')])\""
   },
   "dependencies": {
     "@dyne/interfacer-client": "^0.6.1",

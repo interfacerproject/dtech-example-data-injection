@@ -2,6 +2,7 @@ node_modules/
 results.json
 results-sdk.json
 results-inmachines.json
+results-3d-demo-models.json
 test_image.png
 *.log
 .env
