@@ -1,0 +1,232 @@
+{
+  "scrapedAt": "2026-09-08",
+  "organization": {
+    "name": "InMachines",
+    "username": "inmachines",
+    "email": "info@inmachines.net",
+    "website": "https://www.inmachines.net/",
+    "location": {
+      "name": "InMachines",
+      "address": "Röntgenstr. 18A, 21493 Schwarzenbek, Germany",
+      "lat": 53.5030819,
+      "lng": 10.5050928
+    }
+  },
+  "designs": [
+    {
+      "key": "small-3d-printer",
+      "name": "OLSK Small 3D Printer v3",
+      "description": "OLSK Small 3D Printer v3 is an open-source desktop 3D printer with an actively cooled CoreXY motion system and independent Z motors. Calibration takes place automatically before each print in under five minutes using an eddy-current surface scanner. It also features a built-in accelerometer, enhanced cooling with auxiliary part-cooling fans, a high-flow nozzle, filament sensor, fully enclosed housing, removable magnetic beds, and an easily accessible electronics compartment.",
+      "repo": "https://github.com/Open-Lab-Starter-Kit/OLSK-Small-3D-Printer",
+      "license": "CERN-OHL-W-2.0",
+      "sourceUrl": "https://www.inmachines.net/open-lab-starter-kit#Small3DPrinter",
+      "imageUrl": "https://irp.cdn-website.com/2b5ccdcd/dms3rep/multi/opt/OLSK_Small_3DPrinter_V3_Detail_1-706c4583-1920w.jpg",
+      "bomUrl": "https://github.com/Open-Lab-Starter-Kit/OLSK-Small-3D-Printer/blob/main/OLSK_Small_3D_Printer_V3-BOM.xlsx",
+      "modelUrls": [],
+      "tags": ["open-source-hardware", "open-lab-starter-kit", "3d-printer", "corexy", "digital-fabrication"],
+      "complexity": "Advanced",
+      "machineTags": ["3D Printer", "CNC Mill", "Laser Cutter", "Soldering Iron"],
+      "materialTags": ["Aluminum", "Steel", "Acrylic", "PLA"],
+      "productFilters": {
+        "categories": ["Tools", "Education"],
+        "powerCompatibility": ["220-240V AC"],
+        "replicability": ["Medium"],
+        "repairability": true
+      }
+    },
+    {
+      "key": "large-3d-printer",
+      "name": "OLSK Large 3D Printer v3",
+      "description": "A large-format 3D printer with a 1000 × 1000 × 1300 mm build volume. Its enclosed industrial design uses linear rails on every axis, a quad-point self-leveling CoreXY gantry, modular heated bed, eddy-current surface scanner, built-in accelerometer, and kinetic joints for non-planar printing. Customized Klipper firmware provides local and remote access through a touchscreen, camera, Ethernet, and Wi-Fi.",
+      "repo": "https://github.com/Open-Lab-Starter-Kit/OLSK-Large-3D-Printer",
+      "license": "GPL-3.0",
+      "sourceUrl": "https://www.inmachines.net/open-lab-starter-kit#Large3DPrinter",
+      "imageUrl": "https://irp.cdn-website.com/2b5ccdcd/dms3rep/multi/opt/OLSK_Large3DPrinter_V2_Detail_1-1920w.jpg",
+      "bomUrl": "https://github.com/Open-Lab-Starter-Kit/OLSK-Large-3D-Printer/blob/main/OLSK_Large_3D_Printer_V3-BOM.xlsx",
+      "modelUrls": [],
+      "tags": ["open-source-hardware", "open-lab-starter-kit", "large-format", "3d-printer", "corexy", "klipper"],
+      "complexity": "Expert",
+      "machineTags": ["3D Printer", "CNC Mill", "Laser Cutter", "Soldering Iron"],
+      "materialTags": ["Aluminum", "Steel", "Acrylic", "PLA"],
+      "productFilters": {
+        "categories": ["Tools"],
+        "powerCompatibility": ["220-240V AC"],
+        "replicability": ["Low"],
+        "repairability": true
+      }
+    },
+    {
+      "key": "small-laser",
+      "name": "OLSK Small Laser v2",
+      "description": "A compact Fabulaser Mini laser cutter built from interlocked aluminum plates. Its 1161 × 812 × 390 mm enclosure contains a 600 × 400 mm cutting area and a 40 W CO₂ laser able to cut acrylic and plywood up to 8 mm. It was designed with redundant safety systems and industrial-quality components.",
+      "repo": "https://github.com/Open-Lab-Starter-Kit/OLSK-Small-Laser",
+      "license": "CERN-OHL-W-2.0",
+      "sourceUrl": "https://www.inmachines.net/open-lab-starter-kit#SmallLaser",
+      "imageUrl": "https://irp.cdn-website.com/2b5ccdcd/dms3rep/multi/opt/IMG_20230214_171051-b1f89c91-1920w.jpg",
+      "bomUrl": "https://github.com/Open-Lab-Starter-Kit/OLSK-Small-Laser/blob/main/OLSK_Small_Laser_V2_BOM.pdf",
+      "modelUrls": [
+        "https://raw.githubusercontent.com/Open-Lab-Starter-Kit/OLSK-Small-Laser/main/cad/OLSK_Small_Laser_V2.step"
+      ],
+      "tags": ["open-source-hardware", "open-lab-starter-kit", "laser-cutter", "co2-laser", "digital-fabrication"],
+      "complexity": "Advanced",
+      "machineTags": ["CNC Mill", "3D Printer", "Soldering Iron"],
+      "materialTags": ["Aluminum", "Acrylic", "Plywood", "Steel"],
+      "productFilters": {
+        "categories": ["Tools", "Education"],
+        "powerCompatibility": ["220-240V AC"],
+        "replicability": ["Medium"],
+        "repairability": true
+      }
+    },
+    {
+      "key": "large-laser",
+      "name": "OLSK Large Laser v3",
+      "description": "An open-source large-format RF laser cutter and the first laser cutter in the project with a tool changer. Magnetic kinematic-coupling tools support 40 W diode, 40 W CO₂, and 60 W CO₂ sources. The chamfered enclosure integrates a touchscreen, status lighting, dual 16-megapixel cameras, and OLOS software for G-code generation, job previews, image positioning, AI image generation, Wi-Fi, and Ethernet.",
+      "repo": "https://github.com/Open-Lab-Starter-Kit/OLSK-Large-Laser",
+      "license": "CERN-OHL-W-2.0",
+      "sourceUrl": "https://www.inmachines.net/open-lab-starter-kit#LargeLaser",
+      "imageUrl": "https://irp.cdn-website.com/2b5ccdcd/dms3rep/multi/opt/IMG_20240601_101739-1920w.jpg",
+      "bomUrl": "https://github.com/Open-Lab-Starter-Kit/OLSK-Large-Laser/blob/main/OLSK_Large_Laser_V3_BOM.xlsx",
+      "modelUrls": [],
+      "tags": ["open-source-hardware", "open-lab-starter-kit", "large-format", "laser-cutter", "tool-changer", "olos"],
+      "complexity": "Expert",
+      "machineTags": ["CNC Mill", "3D Printer", "Soldering Iron"],
+      "materialTags": ["Aluminum", "Acrylic", "Plywood", "Steel"],
+      "productFilters": {
+        "categories": ["Tools"],
+        "powerCompatibility": ["220-240V AC"],
+        "replicability": ["Low"],
+        "repairability": true
+      }
+    },
+    {
+      "key": "small-cnc",
+      "name": "OLSK Small CNC v3",
+      "description": "A desktop CNC milling machine with an open-source ten-position tool changer, tool measurement, and tool cleaning. The aluminum frame provides a 400 × 600 × 150 mm milling volume. Features include a fully enclosed liftable window, flush-mounted 24 V emergency stop, key lock, coolant system, universal fixture-and-vacuum bed, touchscreen, and OLOS control software.",
+      "repo": "https://github.com/Open-Lab-Starter-Kit/OLSK-Small-CNC",
+      "license": "CERN-OHL-W-2.0",
+      "sourceUrl": "https://www.inmachines.net/open-lab-starter-kit#SmallCNC",
+      "imageUrl": "https://irp.cdn-website.com/2b5ccdcd/dms3rep/multi/opt/OLSK_SmallCNC_V3_Detail_1-1bc2e99c-1920w.png",
+      "bomUrl": "https://github.com/Open-Lab-Starter-Kit/OLSK-Small-CNC/blob/main/OLSK_Small_CNC_V3-BOM.xlsx",
+      "modelUrls": [],
+      "tags": ["open-source-hardware", "open-lab-starter-kit", "cnc", "milling", "tool-changer", "olos"],
+      "complexity": "Expert",
+      "machineTags": ["CNC Mill", "Laser Cutter", "3D Printer", "Soldering Iron"],
+      "materialTags": ["Aluminum", "Steel", "Acrylic"],
+      "productFilters": {
+        "categories": ["Tools"],
+        "powerCompatibility": ["220-240V AC", "24V DC"],
+        "replicability": ["Low"],
+        "repairability": true
+      }
+    },
+    {
+      "key": "large-cnc",
+      "name": "OLSK Large CNC v3",
+      "description": "An open-source large-format CNC mill with a 2500 × 1250 mm working area. Its standard-beam industrial structure includes pneumatics, a fourteen-position automatic tool changer, tool sensor and cleaning, pneumatic coupling, and a 4.5 kW spindle. A fully enclosed housing with liftable windows, 24 V emergency stop, protected power system, touchscreen, OLOS software, Wi-Fi, and Ethernet complete the machine.",
+      "repo": "https://github.com/Open-Lab-Starter-Kit/OLSK-Large-CNC",
+      "license": "CERN-OHL-W-2.0",
+      "sourceUrl": "https://www.inmachines.net/open-lab-starter-kit#LargeCNC",
+      "imageUrl": "https://irp.cdn-website.com/2b5ccdcd/dms3rep/multi/opt/OLSK_Large_CNC_V2_Detail3-1920w.jpg",
+      "bomUrl": "https://github.com/Open-Lab-Starter-Kit/OLSK-Large-CNC/blob/main/OLSK_Large_CNC_V3-BOM.xlsx",
+      "modelUrls": [],
+      "tags": ["open-source-hardware", "open-lab-starter-kit", "large-format", "cnc", "milling", "tool-changer", "olos"],
+      "complexity": "Expert",
+      "machineTags": ["CNC Mill", "Laser Cutter", "3D Printer", "Soldering Iron"],
+      "materialTags": ["Aluminum", "Steel", "Plywood"],
+      "productFilters": {
+        "categories": ["Tools"],
+        "powerCompatibility": ["220-240V AC", "24V DC"],
+        "replicability": ["Low"],
+        "repairability": true
+      }
+    },
+    {
+      "key": "3d-scanner",
+      "name": "OLSK 3D Scanner v3",
+      "description": "An open-source 3D scanner combining a moving camera with a rotating turntable. Its enclosed environment includes two adjustable LED lights and configurable image counts for each rotation and arc movement. The compact design is intended to be readily replicated and assembled in Fab Labs, schools, or at home.",
+      "repo": "https://github.com/Open-Lab-Starter-Kit/OLSK-3D-Scanner",
+      "license": "CERN-OHL-W-2.0",
+      "sourceUrl": "https://www.inmachines.net/open-lab-starter-kit#ThreeDScanner",
+      "imageUrl": "https://irp.cdn-website.com/2b5ccdcd/dms3rep/multi/opt/OLSK_3DScanner_v3_2-1920w.jpg",
+      "bomUrl": "https://github.com/Open-Lab-Starter-Kit/OLSK-3D-Scanner/blob/main/OLSK%203D%20Scanner%20V3%20-%20BOM.xlsx",
+      "modelUrls": [],
+      "tags": ["open-source-hardware", "open-lab-starter-kit", "3d-scanner", "photogrammetry", "digital-fabrication"],
+      "complexity": "Advanced",
+      "machineTags": ["3D Printer", "Laser Cutter", "Soldering Iron"],
+      "materialTags": ["Aluminum", "Acrylic", "PLA"],
+      "productFilters": {
+        "categories": ["Tools", "Education"],
+        "powerCompatibility": ["220-240V AC"],
+        "replicability": ["High"],
+        "repairability": true
+      }
+    },
+    {
+      "key": "vinyl-cutter",
+      "name": "OLSK Vinyl Cutter v3",
+      "description": "The first open-source vinyl cutter in the Open Lab Starter Kit. Its compact, stable construction offers a 297 mm A3 cutting width. TMC drivers with 1/256 microstepping interpolation provide smooth motion, while four pinch rollers use bistable locking. The manually regulated knife can be exchanged for tools such as a drawing pen, and OLOS supplies job preview and file management.",
+      "repo": "https://github.com/Open-Lab-Starter-Kit/OLSK-Vinyl-Cutter",
+      "license": "CERN-OHL-W-2.0",
+      "sourceUrl": "https://www.inmachines.net/open-lab-starter-kit#VinylCutter",
+      "imageUrl": "https://irp.cdn-website.com/2b5ccdcd/dms3rep/multi/opt/OLSK_Vinyl_Cutter_V3_2-f79af6b3-1920w.jpg",
+      "bomUrl": "https://github.com/Open-Lab-Starter-Kit/OLSK-Vinyl-Cutter/blob/main/OLSK_Vinyl_Cutter_V3-BOM.xlsx",
+      "modelUrls": [
+        "https://raw.githubusercontent.com/Open-Lab-Starter-Kit/OLSK-Vinyl-Cutter/main/cad/Vinyl%20Cutter%20V3.step"
+      ],
+      "tags": ["open-source-hardware", "open-lab-starter-kit", "vinyl-cutter", "plotter", "olos"],
+      "complexity": "Advanced",
+      "machineTags": ["3D Printer", "Laser Cutter", "Soldering Iron"],
+      "materialTags": ["Aluminum", "Steel", "Acrylic"],
+      "productFilters": {
+        "categories": ["Tools", "Education"],
+        "powerCompatibility": ["220-240V AC"],
+        "replicability": ["High"],
+        "repairability": true
+      }
+    }
+  ],
+  "services": [
+    {
+      "name": "Custom Machines",
+      "description": "InMachines prototypes custom machines for research and industry by combining additive and subtractive digital-fabrication technologies, including machines with combined or exchangeable end effectors. The service can include dedicated power and digital electronics, in-house PCB prototypes, professional PCB batches, open-source-compatible controls, sensor and actuator integration, and modernization of existing manually controlled machines.",
+      "repo": "https://www.inmachines.net/custom-machines",
+      "sourceUrl": "https://www.inmachines.net/custom-machines",
+      "imageUrl": "https://irp.cdn-website.com/2b5ccdcd/dms3rep/multi/opt/MidFDMarm+%281%29-1920w.jpeg",
+      "tags": ["custom-machines", "machine-design", "rapid-prototyping", "electronics", "pcb"],
+      "serviceType": ["Fabrication"],
+      "availability": ["Booking Required"]
+    },
+    {
+      "name": "For Fab Labs",
+      "description": "InMachines plans and equips new Fab Labs and expands existing ones, including machinery procurement, installation, power systems, mobile data and local servers, accessories, and furniture design and production. Its Tolocar work delivered two mobile makerspaces for Ukraine: a 3.5-ton cargo van and a 7.5-ton truck with digital-fabrication machines, independent power, solar power, internet, and locally available documentation and tutorials.",
+      "repo": "https://www.inmachines.net/mobile-makerspace",
+      "sourceUrl": "https://www.inmachines.net/mobile-makerspace",
+      "imageUrl": "https://irp.cdn-website.com/2b5ccdcd/dms3rep/multi/opt/MobileMakerspace_2_low-48f9464d-bb06b785-1920w.jpg",
+      "tags": ["fab-lab", "makerspace", "planning", "procurement", "installation", "maintenance", "mobile-makerspace"],
+      "serviceType": ["Fabrication", "Space Access"],
+      "availability": ["Booking Required"]
+    },
+    {
+      "name": "Fab Academy",
+      "description": "InMachines supports Fab Academy students and Fab Labs by assessing nodes, providing remote mentoring, evaluating assignments, and supplying required materials. The linked Fabulaser Mini is an open-source 40 W CO₂ laser-cutter kit designed for Fab Labs and classrooms, with a detailed assembly manual and a build process intended as a practical learning experience.",
+      "repo": "https://www.inmachines.net/Fabulasermini",
+      "sourceUrl": "https://www.inmachines.net/Fabulasermini",
+      "imageUrl": "https://irp.cdn-website.com/2b5ccdcd/dms3rep/multi/opt/IMG_20201123_192842-1920w.jpg",
+      "tags": ["fab-academy", "remote-mentoring", "node-assessment", "education", "fabulaser-mini"],
+      "remote": true,
+      "serviceType": ["Learning & Education"],
+      "availability": ["Booking Required"]
+    },
+    {
+      "name": "Train the Trainers",
+      "description": "Training centered on the Fab Academy Kit, a mini Fab Lab for home use. The kit gives remote students the tools needed for many Fab Academy assignments and supports practice in digital fabrication. It includes a desktop 3D printer, mini CNC machine, SMD electronics, oscilloscope, soldering station, hand tools, media tools, measuring devices, and consumables.",
+      "repo": "https://www.inmachines.net/fabacademykit",
+      "sourceUrl": "https://www.inmachines.net/fabacademykit",
+      "imageUrl": "https://irp.cdn-website.com/2b5ccdcd/dms3rep/multi/opt/all_box-ce0f519f-1920w.jpg",
+      "tags": ["train-the-trainers", "fab-academy", "digital-fabrication", "education", "fab-academy-kit"],
+      "serviceType": ["Learning & Education"],
+      "availability": ["Booking Required"]
+    }
+  ]
+}
